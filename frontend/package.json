@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "prebuild": "node generate-redirects.js",
     "build": "vite build",
     "preview": "vite preview"
   },
