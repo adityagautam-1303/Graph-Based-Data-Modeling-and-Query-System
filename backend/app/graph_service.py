@@ -139,9 +139,8 @@ def build_graph(
                 SELECT DISTINCT soh."salesOrder", soi.material
                 FROM {TABLE_PREFIX}sales_order_items soi
                 JOIN {TABLE_PREFIX}sales_order_headers soh ON soh."salesOrder" = soi."salesOrder"
-                LIMIT :lim
+                ORDER BY 1
             """),
-            {"lim": limit},
         ).fetchall()
 
         for r in soi:
@@ -150,14 +149,9 @@ def build_graph(
                 add_node(f"P-{r[1]}", f"Product {r[1]}", "Product", {"product": r[1]})
                 add_edge(f"SO-{r[0]}", f"P-{r[1]}", "CONTAINS_ITEM")
 
-        # Deliveries
+        # Recover Deliveries
         odh = conn.execute(
-            text(f"""
-                SELECT *
-                FROM {TABLE_PREFIX}outbound_delivery_headers
-                LIMIT :lim
-            """),
-            {"lim": limit},
+            text(f"SELECT * FROM {TABLE_PREFIX}outbound_delivery_headers ORDER BY 1"),
         ).mappings().fetchall()
 
         for r in odh:
@@ -174,9 +168,8 @@ def build_graph(
                 SELECT DISTINCT "deliveryDocument", "referenceSdDocument"
                 FROM {TABLE_PREFIX}outbound_delivery_items
                 WHERE "referenceSdDocument" IS NOT NULL AND "referenceSdDocument" != ''
-                LIMIT :lim
+                ORDER BY 1
             """),
-            {"lim": limit},
         ).fetchall()
 
         for r in odi:
@@ -184,13 +177,7 @@ def build_graph(
 
         # Billing Documents
         bdh = conn.execute(
-            text(f"""
-                SELECT *
-                FROM {TABLE_PREFIX}billing_document_headers
-                WHERE ("billingDocumentIsCancelled" IS NULL OR lower(cast("billingDocumentIsCancelled" as text)) IN ('0', 'false'))
-                LIMIT :lim
-            """),
-            {"lim": limit},
+            text(f"SELECT * FROM {TABLE_PREFIX}billing_document_headers ORDER BY 1"),
         ).mappings().fetchall()
 
         for r in bdh:
@@ -212,9 +199,8 @@ def build_graph(
                 SELECT "billingDocument", "referenceSdDocument"
                 FROM {TABLE_PREFIX}billing_document_items
                 WHERE "referenceSdDocument" IS NOT NULL AND "referenceSdDocument" != ''
-                LIMIT :lim
+                ORDER BY 1
             """),
-            {"lim": limit},
         ).fetchall()
 
         for r in bdi:
@@ -226,23 +212,21 @@ def build_graph(
                 SELECT *
                 FROM {TABLE_PREFIX}journal_entry_items_accounts_receivable
                 WHERE "referenceDocument" IS NOT NULL AND "referenceDocument" != ''
-                LIMIT :lim
+                ORDER BY 1
             """),
-            {"lim": limit},
         ).mappings().fetchall()
 
         for r in jei:
-            tgt_bd = f"BD-{r['referenceDocument']}"
-            if tgt_bd in node_ids:
-                nid = f"JE-{r['accountingDocument']}"
-                r_dict = {k: str(v) if v is not None else "" for k, v in r.items()}
-                add_node(
-                    nid,
-                    f"Journal Entry {r['accountingDocument']}",
-                    "Journal Entry",
-                    r_dict,
-                )
-                add_edge(nid, tgt_bd, "POSTS_TO")
+            nid = f"JE-{r['accountingDocument']}"
+            r_dict = {k: str(v) if v is not None else "" for k, v in r.items()}
+            add_node(
+                nid,
+                f"Journal Entry {r['accountingDocument']}",
+                "Journal Entry",
+                r_dict,
+            )
+            if r.get('referenceDocument'):
+                add_edge(nid, f"BD-{r['referenceDocument']}", "POSTS_TO")
 
     # If focus provided, filter/emphasize subgraph
     if focus_entity and focus_id:
