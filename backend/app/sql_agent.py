@@ -81,7 +81,7 @@ RELATIONSHIP MAP (EXPLICIT):
 4. Billing <-> Journal: bdh."accountingDocument" = jei."accountingDocument"
 
 RULES:
-- DIGIT INTEGRITY: You MUST use the EXACT ID digits provided in the question. NEVER substitute them with similar numbers found in the sample data (e.g. do not substitute '80737921' with '80737721').
+- ID INTEGRITY (CRITICAL): You MUST use the EXACT ID digits provided in the question. NEVER substitute them with similar numbers found in the schema samples (e.g. if I ask for '90504274', do NOT use '90504248' from the samples).
 - MANDATORY SELECT: In EVERY trace query, you MUST select soh."salesOrder", odh."deliveryDocument", bdh."billingDocument", and jei."accountingDocument" for graph connectivity.
 - JOIN: Use LEFT JOIN. Trace in either direction (SO -> Journal or Journal -> SO). 
 - ITEM TABLES: ALWAYS join the ITEM tables (soi, odi, bdi) to bridge documents. Joins solely on headers often fail.

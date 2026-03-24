@@ -240,7 +240,16 @@ def _filter_subgraph(
     nodes: list, edges: list, entity: str, eid: str
 ) -> tuple[list, list]:
     """Extract subgraph around a focus entity."""
-    prefix = {"billing": "BD-", "sales_order": "SO-", "delivery": "D-", "journal": "JE-", "customer": "BP-", "product": "P-"}
+    prefix = {
+        "billing": "BD-",
+        "billing_document": "BD-",
+        "sales_order": "SO-",
+        "delivery": "D-",
+        "journal": "JE-",
+        "journal_entry": "JE-",
+        "customer": "BP-",
+        "product": "P-"
+    }
     fid = prefix.get(entity.lower().replace(" ", "_"), "") + str(eid)
     if fid not in {n["id"] for n in nodes}:
         for n in nodes:
