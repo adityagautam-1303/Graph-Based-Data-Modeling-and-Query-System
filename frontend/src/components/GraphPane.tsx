@@ -123,7 +123,24 @@ export default function GraphPane({
         graphData={graph}
         onNodeClick={handleNodeClick}
         onBackgroundClick={handleBackgroundClick}
-        nodeLabel="label"
+        nodeLabel={(n: any) => {
+          const data = n.data || {};
+          const details = Object.entries(data)
+            .filter(([k]) => k !== 'label' && k !== 'id' && k !== 'entity')
+            .slice(0, 8)
+            .map(([k, v]) => `<div style="font-size: 11px; margin-top: 2px;"><span style="color: #64748b; font-weight: 500;">${k}:</span> <span style="color: #1e293b;">${v}</span></div>`)
+            .join("");
+          
+          return `
+            <div style="background: white; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); min-width: 180px;">
+              <div style="font-weight: 700; color: #0f172a; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">
+                ${n.label}
+              </div>
+              ${details || '<div style="font-size: 11px; color: #94a3b8;">No additional metadata</div>'}
+              ${Object.keys(data).length > 8 ? '<div style="font-size: 10px; color: #94a3b8; margin-top: 6px; font-style: italic;">+ more details...</div>' : ''}
+            </div>
+          `;
+        }}
         nodeColor={(n: any) => {
           if (selectedNode && n.id === selectedNode.id) return "#0f172a"; // Highlight selected node in sharp, high-contrast dark slate
           const isHighlight = highlightIds.includes(n.id);
