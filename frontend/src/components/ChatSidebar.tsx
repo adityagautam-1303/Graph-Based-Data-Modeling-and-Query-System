@@ -28,15 +28,15 @@ export default function ChatSidebar({ onQueryResult, graphData }: ChatSidebarPro
   const extractIds = (text: string, data: any[]): string[] => {
     const ids: string[] = [];
     const prefixes = ["SO-", "BD-", "D-", "JE-", "P-", "BP-", "PL-"];
-    
+
     // Extract any word/number from text
     const words = text.match(/\b\w+\b/g) || [];
-    
+
     // Extract everything straight out of the SQL data payload
     const dataValues = data.flat(Infinity).map(String);
-    
+
     const candidates = [...words, ...dataValues];
-    
+
     for (const val of candidates) {
       for (const p of prefixes) {
         const candidateId = p + val;
@@ -106,12 +106,12 @@ export default function ChatSidebar({ onQueryResult, graphData }: ChatSidebarPro
     <div className="chat-sidebar">
       <div className="chat-header">
         <h2>Chat with Graph</h2>
-        <p className="chat-context">Order to Cash</p>
+        <p className="chat-context">Graph Visualization</p>
         <div className="agent-badge">
           <div className="agent-icon">
             <span>D</span>
           </div>
-          <span>Dodge AI - Graph Agent</span>
+          <span>Graph Agent</span>
         </div>
       </div>
       <div className="chat-messages" ref={scrollRef}>

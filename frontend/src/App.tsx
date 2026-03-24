@@ -3,17 +3,19 @@ import GraphPane from "./components/GraphPane";
 import ChatSidebar from "./components/ChatSidebar";
 import Breadcrumb from "./components/Breadcrumb";
 import type { GraphData, NodeData } from "./types";
+import LandingPage from "./components/LandingPage";
 import "./App.css";
 
 const API_BASE = "/api";
 
 export default function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [highlightIds, setHighlightIds] = useState<string[]>([]);
-  
-  const [sidebarWidth, setSidebarWidth] = useState(360);
+
+  const [sidebarWidth, setSidebarWidth] = useState(320);
   const isResizing = useRef(false);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
@@ -68,10 +70,14 @@ export default function App() {
     setHighlightIds(ids);
   }, []);
 
+  if (showLanding) {
+    return <LandingPage onExplore={() => setShowLanding(false)} />;
+  }
+
   return (
     <div className="app-layout">
       <header className="header">
-        <Breadcrumb items={["Mapping", "Order to Cash"]} />
+        <Breadcrumb items={["Mapping", "Graph Visualization"]} />
       </header>
       <main className="main">
         <section className="graph-section">
@@ -84,7 +90,15 @@ export default function App() {
           />
         </section>
         <div className="resizer" onMouseDown={startResizing} />
-        <aside className="chat-section" style={{ width: sidebarWidth }}>
+        <aside
+          className="chat-section"
+          style={{
+            width: `${sidebarWidth}px`,
+            flexBasis: `${sidebarWidth}px`,
+            flexGrow: 0,
+            flexShrink: 0
+          }}
+        >
           <ChatSidebar
             onQueryResult={onQueryResult}
             graphData={graphData}

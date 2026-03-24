@@ -28,8 +28,8 @@ export default function GraphPane({
   highlightIds,
 }: GraphPaneProps) {
   const fgRef = useRef<any>(null);
-  const graphRef = useRef<{ nodes: any[]; links: any[] }>({ nodes: [], links: [] });
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [hasZoomedToFit, setHasZoomedToFit] = useState(false);
   const observer = useRef<ResizeObserver | null>(null);
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (observer.current) {
@@ -37,13 +37,15 @@ export default function GraphPane({
       observer.current = null;
     }
     if (node) {
+      // Set initial dimensions
+      const rect = node.getBoundingClientRect();
+      setDimensions({ width: rect.width, height: rect.height });
+
       observer.current = new ResizeObserver((entries) => {
         for (let entry of entries) {
-          if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-            setDimensions({
-              width: entry.contentRect.width,
-              height: entry.contentRect.height,
-            });
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            setDimensions({ width, height });
           }
         }
       });
@@ -86,13 +88,21 @@ export default function GraphPane({
 
   // Zoom to fit the entire massive graph when it first finishes loading
   useEffect(() => {
-    if (fgRef.current && data.nodes.length > 0) {
-      // Give the physics engine a tiny bit of time to spread out first
-      setTimeout(() => {
-        fgRef.current?.zoomToFit(800, 50);
-      }, 1000);
-    }
+    setHasZoomedToFit(false);
   }, [data]);
+
+  useEffect(() => {
+    if (!fgRef.current || data.nodes.length === 0 || hasZoomedToFit) return;
+
+    const safeWidth = Math.max(dimensions.width, 100);
+
+    const timer = window.setTimeout(() => {
+      fgRef.current?.zoomToFit(Math.min(safeWidth, 1800), 20);
+      setHasZoomedToFit(true);
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [data, dimensions, hasZoomedToFit]);
 
   if (loading) {
     return (
@@ -131,7 +141,7 @@ export default function GraphPane({
           const t = typeof link.target === 'object' ? link.target.id : link.target;
           return highlightIds.includes(s) && highlightIds.includes(t) ? 3 : 1;
         }}
-        backgroundColor="#f8f9fa"
+        backgroundColor="rgba(0,0,0,0)"
         cooldownTicks={100}
         d3AlphaDecay={0.02}
         d3VelocityDecay={0.3}
@@ -140,8 +150,8 @@ export default function GraphPane({
         <div className="node-detail-card" style={{ maxHeight: '60vh', overflowY: 'auto', position: 'absolute' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
             <h4 style={{ margin: 0 }}>{selectedNode.entity}</h4>
-            <button 
-              onClick={() => onSelectNode(null)} 
+            <button
+              onClick={() => onSelectNode(null)}
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', color: '#64748b' }}
             >
               ×
