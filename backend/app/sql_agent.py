@@ -75,23 +75,28 @@ def get_sql_chain():
         ("system", DOMAIN_GUARDRAIL + "\n\n" + """YOU ARE AN SAP O2C EXPERT. Answer questions by writing SQL against raw tables.
 
 RELATIONSHIP MAP (MANDATORY):
-1. Sales Order <-> Delivery Join: soi."salesOrder" = odi."referenceSdDocument" AND CAST(soi."salesOrderItem" AS INTEGER) = CAST(odi."referenceSdDocumentItem" AS INTEGER)
-2. Delivery <-> Billing Join: odi."deliveryDocument" = bdi."referenceSdDocument" AND CAST(odi."deliveryDocumentItem" AS INTEGER) = CAST(bdi."referenceSdDocumentItem" AS INTEGER)
-   - DOCUMENT DICTIONARY (CRITICAL):
-     * In 'outbound_delivery_items' (odi), 'referenceSdDocument' IS the Sales Order.
-     * In 'billing_document_items' (bdi), 'referenceSdDocument' IS the Delivery Document.
-     * In 'journal_entry_items_accounts_receivable' (jei), 'referenceDocument' IS the Billing Document.
-     * NEVER JOIN 'odi.referenceSdDocument = bdi.referenceSdDocument'. This is ALWAYS wrong.
-3. Billing Header <-> Item: bdh."billingDocument" = bdi."billingDocument"
-4. Billing <-> Journal Join: bdh."accountingDocument" = jei."accountingDocument" OR bdh."billingDocument" = jei."referenceDocument"
+1. Sales Order <-> Delivery Bridge: 
+   - JOIN sales_order_items (soi) AND outbound_delivery_items (odi)
+   - soi."salesOrder" = odi."referenceSdDocument" AND CAST(soi."salesOrderItem" AS INTEGER) = CAST(odi."referenceSdDocumentItem" AS INTEGER)
+2. Delivery <-> Billing Bridge:
+   - JOIN outbound_delivery_items (odi) AND billing_document_items (bdi)
+   - odi."deliveryDocument" = bdi."referenceSdDocument" AND CAST(odi."deliveryDocumentItem" AS INTEGER) = CAST(bdi."referenceSdDocumentItem" AS INTEGER)
+3. Billing <-> Journal Bridge:
+   - JOIN billing_document_headers (bdh) AND journal_entry_items_accounts_receivable (jei)
+   - bdh."accountingDocument" = jei."accountingDocument" OR bdh."billingDocument" = jei."referenceDocument"
+
+CRITICAL JOIN RULES:
+- ALWAYS trace through ITEM tables (soi, odi, bdi) to connect SO, Delivery, and Billing. Headers (soh, odh, bdh) DO NOT join directly to each other.
+- In 'outbound_delivery_items' (odi), 'referenceSdDocument' IS the Sales Order ID.
+- In 'billing_document_items' (bdi), 'referenceSdDocument' IS the Delivery Document ID.
+- In 'journal_entry_items_accounts_receivable' (jei), 'accountingDocument' typically links to 'bdh.accountingDocument'.
 
 RULES:
-- ZERO HALLUCINATION (MANDATORY): You MUST use the EXACT ID provided in the question.
-- DATA ROBUSTNESS (ITEM IDs): Item/Pos IDs (e.g. '000010' vs '10') are inconsistent across tables. You MUST ALWAYS use CAST(... AS INTEGER) for BOTH sides of the join whenever joining ITEM POSITIONS (e.g., soi.salesOrderItem, odi.deliveryDocumentItem, bdi.referenceSdDocumentItem, etc.).
-- MANDATORY SELECT: In EVERY trace query, you MUST select soh.salesOrder, odh.deliveryDocument, bdh.billingDocument, and jei.accountingDocument for graph connectivity.
-- JOIN: Use LEFT JOIN. Trace in either direction (SO -> Journal or Journal -> SO). 
-- ITEM TABLES: ALWAYS join the ITEM tables (soi, odi, bdi) to bridge documents. Joins solely on headers often fail.
-- SQL ONLY: return ONLY SQL code block. No explanations.
+- ZERO HALLUCINATION (MANDATORY): Use the exact ID provided (e.g. '9400000285').
+- DATA ROBUSTNESS: Item/Pos IDs (e.g. '000010' vs '10') are inconsistent. ALWAYS use CAST(... AS INTEGER) on BOTH sides for ALL item/position joins.
+- MANDATORY SELECT: ALWAYS select soh."salesOrder", odh."deliveryDocument", bdh."billingDocument", and jei."accountingDocument" for graph visualization.
+- JOIN: Use LEFT JOIN for tracing. Ensure a continuous chain.
+- SQL ONLY: return ONLY SQL code block.
 
 SCHEMA: {schema}"""),
         MessagesPlaceholder(variable_name="history", optional=True),
@@ -129,7 +134,9 @@ def query_natural_language(question: str, history: Optional[list] = None) -> dic
         
         # PostgreSQL camelCase fix: ensure identifiers are quoted!
         if not USE_SQLITE:
-            sql = re.sub(r'(?<!")\b([a-z]+[A-Z][a-zA-Z0-9]*)\b(?!")', r'"\1"', sql)
+            # Catch camelCase and PascalCase identifiers. 
+            # Must have at least one lowercase AND at least one uppercase to distinguish from keywords.
+            sql = re.sub(r'(?<!")\b([a-z]+[A-Z][a-zA-Z0-9]*|[A-Z][a-z]+[A-Z][a-zA-Z0-9]*)\b(?!")', r'"\1"', sql)
             sql = sql.replace("`", '"')
 
         data = []

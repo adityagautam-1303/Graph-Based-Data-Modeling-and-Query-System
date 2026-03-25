@@ -77,7 +77,10 @@ export default function App() {
   return (
     <div className="app-layout">
       <header className="header">
-        <Breadcrumb items={["Mapping", "Graph Visualization"]} />
+        <Breadcrumb 
+          items={["Mapping", "Graph Visualization"]} 
+          onBack={() => setShowLanding(true)}
+        />
       </header>
       <main className="main">
         <section className="graph-section">
