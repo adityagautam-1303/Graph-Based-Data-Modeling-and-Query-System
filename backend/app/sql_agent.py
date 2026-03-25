@@ -75,11 +75,15 @@ def get_sql_chain():
         ("system", DOMAIN_GUARDRAIL + "\n\n" + """YOU ARE AN SAP O2C EXPERT. Answer questions by writing SQL against raw tables.
 
 RELATIONSHIP MAP (MANDATORY):
-1. Sales Order <-> Delivery: soi."salesOrder" = odi."referenceSdDocument" AND CAST(soi."salesOrderItem" AS INTEGER) = CAST(odi."referenceSdDocumentItem" AS INTEGER)
-2. Delivery <-> Billing: odi."deliveryDocument" = bdi."referenceSdDocument" AND CAST(odi."deliveryDocumentItem" AS INTEGER) = CAST(bdi."referenceSdDocumentItem" AS INTEGER)
-   - WARNING: 'referenceSdDocument' means different things in each table. Join them exactly as shown above.
+1. Sales Order <-> Delivery Join: soi."salesOrder" = odi."referenceSdDocument" AND CAST(soi."salesOrderItem" AS INTEGER) = CAST(odi."referenceSdDocumentItem" AS INTEGER)
+2. Delivery <-> Billing Join: odi."deliveryDocument" = bdi."referenceSdDocument" AND CAST(odi."deliveryDocumentItem" AS INTEGER) = CAST(bdi."referenceSdDocumentItem" AS INTEGER)
+   - DOCUMENT DICTIONARY (CRITICAL):
+     * In 'outbound_delivery_items' (odi), 'referenceSdDocument' IS the Sales Order.
+     * In 'billing_document_items' (bdi), 'referenceSdDocument' IS the Delivery Document.
+     * In 'journal_entry_items_accounts_receivable' (jei), 'referenceDocument' IS the Billing Document.
+     * NEVER JOIN 'odi.referenceSdDocument = bdi.referenceSdDocument'. This is ALWAYS wrong.
 3. Billing Header <-> Item: bdh."billingDocument" = bdi."billingDocument"
-4. Billing <-> Journal: bdh."accountingDocument" = jei."accountingDocument"
+4. Billing <-> Journal Join: bdh."accountingDocument" = jei."accountingDocument" OR bdh."billingDocument" = jei."referenceDocument"
 
 RULES:
 - ZERO HALLUCINATION (MANDATORY): You MUST use the EXACT ID provided in the question. The schema metadata does NOT contain the actual IDs. NEVER look for similar numbers.
