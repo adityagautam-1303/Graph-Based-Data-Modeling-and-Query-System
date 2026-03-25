@@ -60,7 +60,7 @@ def _is_off_topic(query: str) -> bool:
 
 def get_sql_chain():
     schema = None if USE_SQLITE else "o2c"
-    db = SQLDatabase.from_uri(DATABASE_URL, schema=schema, sample_rows_in_table_info=1, include_tables=[
+    db = SQLDatabase.from_uri(DATABASE_URL, schema=schema, sample_rows_in_table_info=0, include_tables=[
         "sales_order_headers", "sales_order_items", "outbound_delivery_headers",
         "outbound_delivery_items", "billing_document_headers", "billing_document_items",
         "journal_entry_items_accounts_receivable", "payments_accounts_receivable",
@@ -81,12 +81,11 @@ RELATIONSHIP MAP (EXPLICIT):
 4. Billing <-> Journal: bdh."accountingDocument" = jei."accountingDocument"
 
 RULES:
-- ID INTEGRITY (CRITICAL): You MUST use the EXACT ID digits provided in the question. NEVER substitute them with similar numbers found in the schema samples (e.g. if I ask for '90504274', do NOT use '90504248' from the samples).
-- MANDATORY SELECT: In EVERY trace query, you MUST select soh."salesOrder", odh."deliveryDocument", bdh."billingDocument", and jei."accountingDocument" for graph connectivity.
+- ZERO HALLUCINATION (MANDATORY): You MUST use the EXACT ID provided in the question. The schema metadata does NOT contain the actual IDs. NEVER look for similar numbers. If the user asks for '80738070', your SQL MUST use '80738070'.
+- MANDATORY SELECT: In EVERY trace query, you MUST select soh.salesOrder, odh.deliveryDocument, bdh.billingDocument, and jei.accountingDocument for graph connectivity.
 - JOIN: Use LEFT JOIN. Trace in either direction (SO -> Journal or Journal -> SO). 
 - ITEM TABLES: ALWAYS join the ITEM tables (soi, odi, bdi) to bridge documents. Joins solely on headers often fail.
 - ITEM SYNC: You MUST use CAST(col AS INTEGER) for all item columns to handle padding (e.g. '10' vs '000010').
-- NAMES: Select raw columns (e.g. soh."salesOrder"). Use literal names as labels in chat.
 - SQL ONLY: return ONLY SQL code block. No explanations.
 
 SCHEMA: {schema}"""),

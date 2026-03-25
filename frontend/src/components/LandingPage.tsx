@@ -50,7 +50,6 @@ export default function LandingPage({ onExplore }: LandingPageProps) {
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </button>
-            <span className="cta-hint">Made by Aditya Gautam</span>
           </div>
         </div>
 
@@ -77,15 +76,12 @@ export default function LandingPage({ onExplore }: LandingPageProps) {
         <div className="footer-grid">
           <div className="footer-item">
             <span className="f-label">Precision</span>
-            <span className="f-value">Strict ID Matching</span>
           </div>
           <div className="footer-item">
             <span className="f-label">Speed</span>
-            <span className="f-value">Sub-second Queries</span>
           </div>
           <div className="footer-item">
             <span className="f-label">Schema</span>
-            <span className="f-value">Graph-Based Modeling</span>
           </div>
         </div>
       </footer>
