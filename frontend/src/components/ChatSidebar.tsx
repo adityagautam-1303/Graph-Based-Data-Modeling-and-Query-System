@@ -18,7 +18,7 @@ export default function ChatSidebar({ onQueryResult, graphData }: ChatSidebarPro
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("Dodge AI is awaiting instructions.");
+  const [status, setStatus] = useState("Agent is awaiting instructions.");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function ChatSidebar({ onQueryResult, graphData }: ChatSidebarPro
 
     setMessages((m) => [...m, { role: "user", content: q }]);
     setLoading(true);
-    setStatus("Dodge AI is thinking...");
+    setStatus("Agent is thinking...");
 
     try {
       const res = await fetch(`${API_BASE}/chat`, {
@@ -98,7 +98,7 @@ export default function ChatSidebar({ onQueryResult, graphData }: ChatSidebarPro
       ]);
     } finally {
       setLoading(false);
-      setStatus("Dodge AI is awaiting instructions.");
+      setStatus("Agent is awaiting instructions.");
     }
   };
 

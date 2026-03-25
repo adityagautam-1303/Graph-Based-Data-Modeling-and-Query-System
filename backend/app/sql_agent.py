@@ -144,8 +144,9 @@ def query_natural_language(question: str, history: Optional[list] = None) -> dic
 
         answer = chain_invoke_summarizer(question, data)
         
-        if "trace" in question.lower() or "flow" in question.lower():
-            answer += f"\n\n(Executed SQL: {sql})"
+        # Removed: SQL inclusion in final answer per user request.
+        # if "trace" in question.lower() or "flow" in question.lower():
+        #     answer += f"\n\n(Executed SQL: {sql})"
             
         return {"answer": answer, "sql": sql, "data": data, "error": None}
     except Exception as e:
