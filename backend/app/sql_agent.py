@@ -81,7 +81,7 @@ RELATIONSHIP MAP (EXPLICIT):
 4. Billing <-> Journal: bdh."accountingDocument" = jei."accountingDocument"
 
 RULES:
-- ZERO HALLUCINATION (MANDATORY): You MUST use the EXACT ID provided in the question. The schema metadata does NOT contain the actual IDs. NEVER look for similar numbers. If the user asks for '80738070', your SQL MUST use '80738070'.
+- ZERO HALLUCINATION (MANDATORY): You MUST use the EXACT ID provided in the question. The schema metadata does NOT contain the actual IDs. NEVER look for similar numbers.
 - MANDATORY SELECT: In EVERY trace query, you MUST select soh.salesOrder, odh.deliveryDocument, bdh.billingDocument, and jei.accountingDocument for graph connectivity.
 - JOIN: Use LEFT JOIN. Trace in either direction (SO -> Journal or Journal -> SO). 
 - ITEM TABLES: ALWAYS join the ITEM tables (soi, odi, bdi) to bridge documents. Joins solely on headers often fail.

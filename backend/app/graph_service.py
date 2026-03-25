@@ -67,7 +67,7 @@ def build_graph(
             text(f"""
                 SELECT *
                 FROM {TABLE_PREFIX}business_partners
-                WHERE "customer" IS NOT NULL AND "customer" != ''
+                WHERE customer IS NOT NULL AND customer != ''
                 LIMIT :lim
             """),
             {"lim": limit},
@@ -136,9 +136,9 @@ def build_graph(
         # Sales Order Items -> Material
         soi = conn.execute(
             text(f"""
-                SELECT DISTINCT soh."salesOrder", soi.material
+                SELECT DISTINCT soh.salesOrder, soi.material
                 FROM {TABLE_PREFIX}sales_order_items soi
-                JOIN {TABLE_PREFIX}sales_order_headers soh ON soh."salesOrder" = soi."salesOrder"
+                JOIN {TABLE_PREFIX}sales_order_headers soh ON soh.salesOrder = soi.salesOrder
                 ORDER BY 1
             """),
         ).fetchall()
@@ -164,12 +164,14 @@ def build_graph(
 
         # Delivery -> Sales Order
         odi = conn.execute(
+        odi = conn.execute(
             text(f"""
-                SELECT DISTINCT "deliveryDocument", "referenceSdDocument"
+                SELECT DISTINCT deliveryDocument, referenceSdDocument
                 FROM {TABLE_PREFIX}outbound_delivery_items
-                WHERE "referenceSdDocument" IS NOT NULL AND "referenceSdDocument" != ''
+                WHERE referenceSdDocument IS NOT NULL AND referenceSdDocument != ''
                 ORDER BY 1
             """),
+        ).fetchall()
         ).fetchall()
 
         for r in odi:
@@ -196,9 +198,9 @@ def build_graph(
         # Billing Item -> Delivery
         bdi = conn.execute(
             text(f"""
-                SELECT "billingDocument", "referenceSdDocument"
+                SELECT billingDocument, referenceSdDocument
                 FROM {TABLE_PREFIX}billing_document_items
-                WHERE "referenceSdDocument" IS NOT NULL AND "referenceSdDocument" != ''
+                WHERE referenceSdDocument IS NOT NULL AND referenceSdDocument != ''
                 ORDER BY 1
             """),
         ).fetchall()
@@ -211,7 +213,7 @@ def build_graph(
             text(f"""
                 SELECT *
                 FROM {TABLE_PREFIX}journal_entry_items_accounts_receivable
-                WHERE "referenceDocument" IS NOT NULL AND "referenceDocument" != ''
+                WHERE referenceDocument IS NOT NULL AND referenceDocument != ''
                 ORDER BY 1
             """),
         ).mappings().fetchall()
