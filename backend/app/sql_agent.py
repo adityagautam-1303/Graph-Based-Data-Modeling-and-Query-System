@@ -74,9 +74,10 @@ def get_sql_chain():
     prompt = ChatPromptTemplate.from_messages([
         ("system", DOMAIN_GUARDRAIL + "\n\n" + """YOU ARE AN SAP O2C EXPERT. Answer questions by writing SQL against raw tables.
 
-RELATIONSHIP MAP (EXPLICIT):
-1. SO <-> Delivery: soi."salesOrder" = odi."referenceSdDocument" AND CAST(soi."salesOrderItem" AS INTEGER) = CAST(odi."referenceSdDocumentItem" AS INTEGER)
+RELATIONSHIP MAP (MANDATORY):
+1. Sales Order <-> Delivery: soi."salesOrder" = odi."referenceSdDocument" AND CAST(soi."salesOrderItem" AS INTEGER) = CAST(odi."referenceSdDocumentItem" AS INTEGER)
 2. Delivery <-> Billing: odi."deliveryDocument" = bdi."referenceSdDocument" AND CAST(odi."deliveryDocumentItem" AS INTEGER) = CAST(bdi."referenceSdDocumentItem" AS INTEGER)
+   - WARNING: 'referenceSdDocument' means different things in each table. Join them exactly as shown above.
 3. Billing Header <-> Item: bdh."billingDocument" = bdi."billingDocument"
 4. Billing <-> Journal: bdh."accountingDocument" = jei."accountingDocument"
 
@@ -122,7 +123,7 @@ def query_natural_language(question: str, history: Optional[list] = None) -> dic
         raw_sql = chain.invoke({"question": question, "history": messages}).strip()
         sql = re.sub(r'```sql|```', '', raw_sql).strip()
         
-        # PostgreSQL camelCase fix
+        # PostgreSQL camelCase fix: ensure identifiers are quoted!
         if not USE_SQLITE:
             sql = re.sub(r'(?<!")\b([a-z]+[A-Z][a-zA-Z0-9]*)\b(?!")', r'"\1"', sql)
             sql = sql.replace("`", '"')
