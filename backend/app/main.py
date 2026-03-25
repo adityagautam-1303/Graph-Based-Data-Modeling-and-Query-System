@@ -66,3 +66,9 @@ def chat(req: ChatRequest):
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/cron")
+def cron_keep_alive():
+    """Endpoint for cron jobs to keep the backend service active."""
+    return {"status": "ok"}
