@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/o2c_graph")
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 USE_SQLITE = "sqlite" in DATABASE_URL
 if not USE_SQLITE:
     try:
