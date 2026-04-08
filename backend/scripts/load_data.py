@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 # Use SQLite if PostgreSQL not available (dev without DB)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/o2c_graph")
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 USE_SQLITE = False
 if "postgresql" in DATABASE_URL:
     try:
