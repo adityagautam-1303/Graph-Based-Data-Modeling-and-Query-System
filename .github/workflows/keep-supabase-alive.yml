@@ -11,13 +11,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "Pinging Supabase REST API..."
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::error::SUPABASE_URL secret is not set or empty in GitHub Secrets!"
+            echo "Please go to: Your Repo -> Settings -> Secrets and variables -> Actions -> add SUPABASE_URL"
+            exit 1
+          fi
+
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_ANON_KEY secret is not set or empty in GitHub Secrets!"
+            echo "Please go to: Your Repo -> Settings -> Secrets and variables -> Actions -> add SUPABASE_ANON_KEY"
+            exit 1
+          fi
+
+          # Clean up URL: trim whitespace, quotes, and trailing slashes
+          CLEAN_URL=$(echo "$SUPABASE_URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" -e 's/\/$//')
+
+          # Ensure https:// prefix
+          if [[ "$CLEAN_URL" != http* ]]; then
+            CLEAN_URL="https://$CLEAN_URL"
+          fi
+
+          ENDPOINT="${CLEAN_URL}/rest/v1/"
+          echo "Target endpoint: $ENDPOINT"
+
           HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" \
-            -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
-          
+            -X GET "$ENDPOINT" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
           echo "Response HTTP Status: $HTTP_STATUS"
           if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 204 ]; then
             echo "Successfully pinged Supabase! Inactivity timer reset."
