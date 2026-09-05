@@ -10,44 +10,62 @@ jobs:
   ping-supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST API
+      - name: Ping Supabase Database API
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ]; then
-            echo "::error::SUPABASE_URL secret is not set or empty in GitHub Secrets!"
-            echo "Please go to: Your Repo -> Settings -> Secrets and variables -> Actions -> add SUPABASE_URL"
+            echo "::error::SUPABASE_URL secret is not set in GitHub Secrets!"
             exit 1
           fi
 
-          if [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "::error::SUPABASE_ANON_KEY secret is not set or empty in GitHub Secrets!"
-            echo "Please go to: Your Repo -> Settings -> Secrets and variables -> Actions -> add SUPABASE_ANON_KEY"
+          if [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::SUPABASE_ANON_KEY secret is not set in GitHub Secrets!"
             exit 1
           fi
 
           # Clean up URL: trim whitespace, quotes, and trailing slashes
           CLEAN_URL=$(echo "$SUPABASE_URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" -e 's/\/$//')
 
-          # Ensure https:// prefix
           if [[ "$CLEAN_URL" != http* ]]; then
             CLEAN_URL="https://$CLEAN_URL"
           fi
 
-          ENDPOINT="${CLEAN_URL}/rest/v1/"
-          echo "Target endpoint: $ENDPOINT"
+          echo "Pinging Supabase..."
 
-          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" \
-            -X GET "$ENDPOINT" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          # Endpoints to attempt: root (for service_role) and common tables (for anon key)
+          ENDPOINTS=(
+            "${CLEAN_URL}/rest/v1/"
+            "${CLEAN_URL}/rest/v1/products?select=*&limit=1"
+            "${CLEAN_URL}/rest/v1/sales_order_headers?select=*&limit=1"
+          )
 
-          echo "Response HTTP Status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 204 ]; then
-            echo "Successfully pinged Supabase! Inactivity timer reset."
+          SUCCESS=false
+
+          for URL in "${ENDPOINTS[@]}"; do
+            echo "Attempting: $URL"
+            HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" \
+              -X GET "$URL" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY")
+            
+            echo "HTTP Status: $HTTP_STATUS"
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "✅ Successfully queried Supabase! Database activity registered."
+              SUCCESS=true
+              break
+            fi
+          done
+
+          if [ "$SUCCESS" = true ]; then
+            exit 0
           else
-            echo "Warning: Received HTTP $HTTP_STATUS"
+            echo "❌ All endpoints failed."
+            echo "Last response:"
             cat response.json
+            echo ""
+            echo "Tip: For the root endpoint, Supabase requires the 'service_role' secret key."
+            echo "Go to Supabase Dashboard -> Settings -> API -> copy 'service_role' key and update SUPABASE_ANON_KEY in GitHub Secrets."
             exit 1
           fi
