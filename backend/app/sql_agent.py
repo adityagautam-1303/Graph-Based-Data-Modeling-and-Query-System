@@ -48,9 +48,11 @@ Do not attempt to answer off-topic questions."""
 
 def _get_llm():
     if LLM_PROVIDER == "groq" and GROQ_API_KEY:
-        return ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct", api_key=GROQ_API_KEY, temperature=0)
+        model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+        return ChatGroq(model=model, api_key=GROQ_API_KEY, temperature=0, max_tokens=500)
     if GOOGLE_API_KEY:
-        return ChatGoogleGenerativeAI(model="gemma-3-27b-it", google_api_key=GOOGLE_API_KEY, temperature=0)
+        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        return ChatGoogleGenerativeAI(model=model, google_api_key=GOOGLE_API_KEY, temperature=0)
     raise ValueError("Set GOOGLE_API_KEY or GROQ_API_KEY in .env.")
 
 def _is_off_topic(query: str) -> bool:

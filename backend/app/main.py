@@ -54,13 +54,23 @@ def chat(req: ChatRequest):
     """Natural language query -> SQL -> data-backed answer."""
     try:
         result = query_natural_language(req.message, history=req.history)
+        if result.get("error"):
+            raise HTTPException(status_code=500, detail=result["error"])
         return ChatResponse(
-            answer=result["answer"],
+            answer=result.get("answer") or "No answer generated.",
             sql=result.get("sql"),
             data=result.get("data"),
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/")
+def root():
+    """Root endpoint for status check."""
+    return {"status": "ok", "message": "Order to Cash Graph & Chat API is running", "docs": "/docs"}
 
 
 @app.get("/api/health")
@@ -72,3 +82,4 @@ def health():
 def cron_keep_alive():
     """Endpoint for cron jobs to keep the backend service active."""
     return {"status": "ok"}
+
